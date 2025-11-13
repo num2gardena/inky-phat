@@ -26,12 +26,34 @@ _panel = inky212x104.Inky212x104(resolution=(HEIGHT, WIDTH), h_flip=False, v_fli
 _panel.set_palette((inky212x104.WHITE, inky212x104.BLACK, inky212x104.RED))
 
 # Export drawing methods into the module namespace
-for method in ["arc", "bitmap", "chord", "draw", "ellipse", "fill", "font", "fontmode", "getfont", "im", "ink", "line", "mode", "palette", "pieslice", "point", "polygon", "rectangle", "shape", "text", "textsize"]:
-    globals()[method] = getattr(_draw, method)
+for method in ["arc", "bitmap", "chord", "draw", "ellipse", "fill", "font", "fontmode", "getfont", "im", "ink", "line", "mode", "palette", "pieslice", "point", "polygon", "rectangle", "shape", "text", "textbbox"]:
+    if hasattr(_draw, method):
+        globals()[method] = getattr(_draw, method)
 
 # Selectively export image methods into the module namespace
 for method in ["paste", "putpixel", "getpixel"]:
     globals()[method] = getattr(_image, method)
+
+# Provide backward compatibility for textsize (deprecated in Pillow 10+, removed in 11+)
+def textsize(text, font=None):
+    """Get the size of a given text string (deprecated, use textbbox instead).
+    
+    This is a compatibility wrapper for the deprecated textsize method.
+    In Pillow 10+, use textbbox() instead.
+    
+    :param text: The text string
+    :param font: The font to use
+    :returns: (width, height) tuple
+    """
+    if hasattr(_draw, 'textbbox'):
+        bbox = _draw.textbbox((0, 0), text, font=font)
+        return (bbox[2] - bbox[0], bbox[3] - bbox[1])
+    elif hasattr(_draw, 'textsize'):
+        # Fallback for older Pillow versions
+        return _draw.textsize(text, font=font)
+    else:
+        # Ultimate fallback
+        raise NotImplementedError("textsize is not available in this Pillow version")
 
 def set_version(version):
     """Set the Inky pHAT version.
